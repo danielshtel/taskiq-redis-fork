@@ -104,11 +104,12 @@ class RedisScheduleSource(ScheduleSource):
                     buffer = []
             if buffer:
                 schedules.extend(await redis.mget(buffer))
-        logger.debug(f'Get schedules: {[
+        result = [
             model_validate(ScheduledTask, self.serializer.loadb(schedule))
             for schedule in schedules
             if schedule
-        ]}')
+        ]
+        logger.debug(f'Get schedules: {result}')
         return [
             model_validate(ScheduledTask, self.serializer.loadb(schedule))
             for schedule in schedules
