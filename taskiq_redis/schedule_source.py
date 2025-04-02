@@ -27,6 +27,8 @@ else:
     _Redis: TypeAlias = Redis
     _BlockingConnectionPool: TypeAlias = BlockingConnectionPool
 
+from logging import getLogger
+logger = getLogger(__name__)
 
 class RedisScheduleSource(ScheduleSource):
     """
@@ -66,6 +68,7 @@ class RedisScheduleSource(ScheduleSource):
 
     async def delete_schedule(self, schedule_id: str) -> None:
         """Remove schedule by id."""
+        logger.debug(f'Deleting schedule {self.prefix}:{schedule_id}')
         async with Redis(connection_pool=self.connection_pool) as redis:
             await redis.delete(f"{self.prefix}:{schedule_id}")
 
@@ -76,6 +79,7 @@ class RedisScheduleSource(ScheduleSource):
         :param schedule: schedule to add.
         :param schedule_id: schedule id.
         """
+        logger.debug(f'Add schedule {self.prefix}:{schedule_id}')
         async with Redis(connection_pool=self.connection_pool) as redis:
             await redis.set(
                 f"{self.prefix}:{schedule.schedule_id}",
@@ -100,6 +104,7 @@ class RedisScheduleSource(ScheduleSource):
                     buffer = []
             if buffer:
                 schedules.extend(await redis.mget(buffer))
+        logger.debug(f'Get schedules: {schedules}')
         return [
             model_validate(ScheduledTask, self.serializer.loadb(schedule))
             for schedule in schedules
@@ -108,6 +113,7 @@ class RedisScheduleSource(ScheduleSource):
 
     async def post_send(self, task: ScheduledTask) -> None:
         """Delete a task after it's completed."""
+        logger.debug(f'Post schedule: {task.schedule_id}, task time - {task.time}')
         if task.time is not None:
             await self.delete_schedule(task.schedule_id)
 
