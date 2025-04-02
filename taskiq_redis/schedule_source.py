@@ -79,7 +79,7 @@ class RedisScheduleSource(ScheduleSource):
         :param schedule: schedule to add.
         :param schedule_id: schedule id.
         """
-        logger.debug(f'Add schedule {self.prefix}:{schedule_id}')
+        logger.debug(f'Add schedule {self.prefix}:{schedule.schedule_id}')
         async with Redis(connection_pool=self.connection_pool) as redis:
             await redis.set(
                 f"{self.prefix}:{schedule.schedule_id}",
@@ -104,7 +104,11 @@ class RedisScheduleSource(ScheduleSource):
                     buffer = []
             if buffer:
                 schedules.extend(await redis.mget(buffer))
-        logger.debug(f'Get schedules: {schedules}')
+        logger.debug(f'Get schedules: {[
+            model_validate(ScheduledTask, self.serializer.loadb(schedule))
+            for schedule in schedules
+            if schedule
+        ]}')
         return [
             model_validate(ScheduledTask, self.serializer.loadb(schedule))
             for schedule in schedules
